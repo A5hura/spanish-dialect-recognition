@@ -1,1 +1,1 @@
-# spanish-dialect-recognition
+# Spanish dialect recognition
