@@ -1,110 +1,85 @@
-import requests
 import openai
-import tkinter as tk
-from tkinter import filedialog
+import requests
 import pandas as pd
-import os
-import json
 
-# === STEP 0: API SETUP ===
-subscription_key = "YOUR_AZURE_SUBSCRIPTION_KEY"
-region = "YOUR_AZURE_REGION"  # e.g., "eastus"
-endpoint = "https://api.cognitive.microsofttranslator.com"
+# === Step 1: Insert Your API Keys ===
+AZURE_KEY = "YOUR_AZURE_KEY_HERE"
+AZURE_REGION = "YOUR_REGION"  # e.g., "eastus"
+OPENAI_KEY = "YOUR_OPENAI_KEY_HERE"
 
-language_map = {
-    "ARG": "es-AR",
-    "CHI": "es-CL",
-    "COL": "es-CO",
-    "MEX": "es-MX",
-    "BRA": "pt-BR"
+# Set OpenAI API key
+openai.api_key = OPENAI_KEY
+
+# === Step 2: Dialect Code to Language Mapping ===
+dialect_lang_map = {
+    "ARG": "es-ar",
+    "CHL": "es-cl",
+    "COL": "es-co",
+    "MEX": "es-mx",
+    "BRA": "pt-br"
 }
 
-headers_azure = {
-    'Ocp-Apim-Subscription-Key': subscription_key,
-    'Ocp-Apim-Subscription-Region': region,
-    'Content-type': 'application/json'
-}
-
-params_azure = {
-    'api-version': '3.0',
-    'to': 'en'
-}
-
-# === OpenAI API Key ===
-root = tk.Tk()
-root.withdraw()
-key_file_path = filedialog.askopenfilename(
-    title="Select OpenAI API Key File",
-    filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
-)
-
-if not key_file_path or not os.path.exists(key_file_path):
-    print("❌ No OpenAI API key file selected. Exiting.")
-    exit(1)
-
-with open(key_file_path, "r", encoding="utf-8") as f:
-    openai.api_key = f.read().strip()
-
-client = openai.OpenAI(api_key=openai.api_key)
-
-# === STEP 1: Read Data ===
+# === Step 3: Load the labeled input data ===
 input_file = "labeled_output.txt"
-data = []
+rows = []
 
-with open(input_file, "r", encoding="utf-8") as infile:
-    for line in infile:
-        if "=>" not in line:
-            continue
-        sentence, label = line.rsplit("=>", 1)
-        sentence = sentence.strip()
-        label = label.strip().upper()
-        data.append((sentence, label))
+with open(input_file, "r", encoding="utf-8") as f:
+    for line in f:
+        if "=>" in line:
+            sentence, code = line.strip().split("=>")
+            sentence = sentence.strip()
+            code = code.strip().upper()
+            rows.append((sentence, code))
 
-# === STEP 2 & 3: Translate using Azure and OpenAI ===
-results = []
-
-for sentence, label in data:
-    source_lang = language_map.get(label, "es")
-
-    # Azure Translation
+# === Step 4: Azure Translate Function ===
+def azure_translate(text, source_lang):
+    endpoint = "https://api.cognitive.microsofttranslator.com/translate"
+    params = {
+        "api-version": "3.0",
+        "from": source_lang,
+        "to": "en"
+    }
+    headers = {
+        "Ocp-Apim-Subscription-Key": AZURE_KEY,
+        "Ocp-Apim-Subscription-Region": AZURE_REGION,
+        "Content-Type": "application/json"
+    }
+    body = [{"text": text}]
     try:
-        body = [{'text': sentence}]
-        response = requests.post(
-            f"{endpoint}/translate",
-            params={**params_azure, 'from': source_lang},
-            headers=headers_azure,
-            json=body
-        )
-        translated_azure = response.json()[0]['translations'][0]['text']
+        response = requests.post(endpoint, params=params, headers=headers, json=body)
+        response.raise_for_status()
+        return response.json()[0]["translations"][0]["text"]
     except Exception as e:
-        print(f"Azure error: {e}")
-        translated_azure = "ERROR"
+        print(f"Azure Error for '{text}': {e}")
+        return "ERROR"
 
-    # OpenAI Translation
+# === Step 5: OpenAI Translate Function ===
+def openai_translate(text, source_lang):
+    prompt = f"Translate the following sentence from {source_lang} to English:\n\n{text}"
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a Spanish/Portuguese-to-English translator."},
-                {"role": "user", "content": f"Translate to English:\n{sentence}"}
+                {"role": "system", "content": "You are a professional translator."},
+                {"role": "user", "content": prompt}
             ],
-            temperature=0,
+            temperature=0.3,
             max_tokens=100
         )
-        translated_openai = response.choices[0].message.content.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
-        print(f"OpenAI error: {e}")
-        translated_openai = "ERROR"
+        print(f"OpenAI Error for '{text}': {e}")
+        return "ERROR"
 
-    results.append({
-        "Original": sentence,
-        "Azure_English": translated_azure,
-        "OpenAI_English": translated_openai,
-        "Country": label
-    })
+# === Step 6: Translation Pipeline ===
+output_data = []
+for sentence, code in rows:
+    lang_code = dialect_lang_map.get(code, "es")
+    azure_result = azure_translate(sentence, lang_code)
+    openai_result = openai_translate(sentence, lang_code)
+    output_data.append([sentence, code, azure_result, openai_result])
 
-# === STEP 4: Save to Excel ===
-df = pd.DataFrame(results)
+# === Step 7: Save to Excel ===
+df = pd.DataFrame(output_data, columns=["Original", "Dialect", "Azure Translation", "OpenAI Translation"])
 df.to_excel("translated_output.xlsx", index=False)
-
-print("✅ Translations complete. Saved as 'translated_output.xlsx'")
+print("✅ Translations completed. Output saved to 'translated_output.xlsx'")
