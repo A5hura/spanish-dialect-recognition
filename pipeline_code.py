@@ -1,16 +1,21 @@
-from pyspark.sql.functions import split, trim
 import pandas as pd
 
-# ✅ Read .txt file using DataFrame API
-df_raw = spark.read.text("dbfs:/FileStore/my_data/input.txt")
+# Set your file path (assumes file is in same directory as script)
+input_file = "input.txt"
+output_file = "output.xlsx"
 
-# ✅ Parse 'INFORMATION => CODE' format
-df_parsed = df_raw.withColumn("Information", trim(split(df_raw["value"], "=>")[0])) \
-                  .withColumn("Country_Code", trim(split(df_raw["value"], "=>")[1])) \
-                  .select("Country_Code", "Information")
+# Read and parse lines
+data = []
+with open(input_file, 'r', encoding='utf-8') as file:
+    for line in file:
+        if '=>' in line:
+            info, code = line.strip().split('=>')
+            data.append((code.strip(), info.strip()))
 
-# ✅ Convert to Pandas and save as Excel
-pandas_df = df_parsed.toPandas()
-pandas_df.to_excel("/dbfs/FileStore/my_data/output.xlsx", index=False)
+# Create DataFrame
+df = pd.DataFrame(data, columns=["Country_Code", "Information"])
 
-print("✅ Excel saved at /dbfs/FileStore/my_data/output.xlsx")
+# Save to Excel
+df.to_excel(output_file, index=False)
+
+print(f"✅ Excel file saved as: {output_file}")
