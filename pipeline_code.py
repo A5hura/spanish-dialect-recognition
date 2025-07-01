@@ -1,21 +1,51 @@
 import pandas as pd
+from azure.ai.translation.text import TextTranslationClient
+from azure.core.credentials import AzureKeyCredential
 
-# Set your file path (assumes file is in same directory as script)
-input_file = "input.txt"
-output_file = "output.xlsx"
+# --- CONFIGURATION ---
+AZURE_KEY = "your_azure_key_here"
+ENDPOINT = "your_endpoint_here"
+REGION = "northcentralus"
 
-# Read and parse lines
-data = []
-with open(input_file, 'r', encoding='utf-8') as file:
-    for line in file:
-        if '=>' in line:
-            info, code = line.strip().split('=>')
-            data.append((code.strip(), info.strip()))
+# --- LANGUAGE MAPPING ---
+language_map = {
+    "BRA": "pt",        # Brazilian Portuguese
+    "MEX": "es",        # Mexican Spanish
+    "COL": "es",        # Colombian Spanish
+    "CHL": "es",        # Chilean Spanish
+    "ARG": "es",        # Argentinian Spanish
+}
 
-# Create DataFrame
-df = pd.DataFrame(data, columns=["Country_Code", "Information"])
+# --- SETUP AZURE TRANSLATOR ---
+translator = TextTranslationClient(
+    endpoint=ENDPOINT,
+    region=REGION,
+    credential=AzureKeyCredential(AZURE_KEY)
+)
 
-# Save to Excel
-df.to_excel(output_file, index=False)
+# --- READ CSV ---
+df = pd.read_csv("your_input_file.csv")  # 2 columns: [Information, Country_Code]
 
-print(f"✅ Excel file saved as: {output_file}")
+# --- TRANSLATE EACH SENTENCE ---
+def translate_text(sentence, country_code):
+    if pd.isna(sentence) or pd.isna(country_code):
+        return ""
+    src_lang = language_map.get(country_code.strip().upper(), "auto")
+    try:
+        response = translator.translate(
+            content=[sentence],
+            from_parameter=src_lang,
+            to=["en"]
+        )
+        for item in response:
+            for t in item.translations:
+                return t.text
+    except Exception as e:
+        print(f"Error translating '{sentence}': {e}")
+        return "ERROR"
+
+# Apply translation
+df["Translated_English"] = df.apply(lambda row: translate_text(row[0], row[1]), axis=1)
+
+# --- SAVE OUTPUT ---
+df.to_csv("translated_output.csv", index=False)
