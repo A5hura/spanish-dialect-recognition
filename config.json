@@ -1,0 +1,80 @@
+{
+  "steps": [
+    {
+      "table_name": "customers",
+      "columns": {
+        "customer_id": {"col_dtype": "int", "semantic_type": "id"},
+        "first_name": {"col_dtype": "string", "semantic_type": "first_name"},
+        "last_name": {"col_dtype": "string", "semantic_type": "last_name"},
+        "email": {"col_dtype": "string", "semantic_type": "email"},
+        "phone": {"col_dtype": "string", "semantic_type": "phone"},
+        "birth_date": {"col_dtype": "date", "semantic_type": "birth_date"},
+        "address": {"col_dtype": "string", "semantic_type": "address"}
+      }
+    },
+    {
+      "table_name": "orders",
+      "columns": {
+        "order_id": {"col_dtype": "int", "semantic_type": "id"},
+        "customer_id": {"col_dtype": "int", "semantic_type": "id"},
+        "order_date": {"col_dtype": "date", "semantic_type": "date"},
+        "total_amount": {"col_dtype": "decimal", "semantic_type": "amount"},
+        "status": {"col_dtype": "string", "semantic_type": "status"},
+        "quantity": {"col_dtype": "int", "semantic_type": "quantity"}
+      }
+    },
+    {
+      "table_name": "products",
+      "columns": {
+        "product_id": {"col_dtype": "int", "semantic_type": "id"},
+        "product_name": {"col_dtype": "string", "semantic_type": "product"},
+        "price": {"col_dtype": "decimal", "semantic_type": "price"},
+        "department": {"col_dtype": "string", "semantic_type": "department"},
+        "rating": {"col_dtype": "int", "semantic_type": "rating"}
+      }
+    },
+    {
+      "table_name": "employees",
+      "columns": {
+        "employee_id": {"col_dtype": "int", "semantic_type": "id"},
+        "person_name": {"col_dtype": "string", "semantic_type": "person"},
+        "email": {"col_dtype": "string", "semantic_type": "email"},
+        "phone": {"col_dtype": "string", "semantic_type": "phone"},
+        "department": {"col_dtype": "string", "semantic_type": "department"},
+        "salary": {"col_dtype": "int", "semantic_type": "salary"},
+        "start_date": {"col_dtype": "date", "semantic_type": "date"},
+        "birth_date": {"col_dtype": "date", "semantic_type": "birth_date"},
+        "currency": {"col_dtype": "string", "semantic_type": "currency"}
+      }
+    },
+    {
+      "table_name": "projects",
+      "columns": {
+        "project_id": {"col_dtype": "int", "semantic_type": "id"},
+        "project_name": {"col_dtype": "string", "semantic_type": "project"},
+        "start_date": {"col_dtype": "date", "semantic_type": "date"},
+        "end_date": {"col_dtype": "date", "semantic_type": "date"},
+        "budget_amount": {"col_dtype": "decimal", "semantic_type": "amount"},
+        "status": {"col_dtype": "string", "semantic_type": "status"}
+      }
+    },
+    {
+      "table_name": "date_dimension",
+      "columns": {
+        "date_key": {"col_dtype": "string"},
+        "date": {"col_dtype": "date"},
+        "day_of_month": {"col_dtype": "int"},
+        "day_of_week": {"col_dtype": "int"},
+        "day_of_year": {"col_dtype": "int"},
+        "week_of_month": {"col_dtype": "int"},
+        "week_of_year": {"col_dtype": "int"},
+        "month_name": {"col_dtype": "string"},
+        "month_number": {"col_dtype": "int"},
+        "quarter": {"col_dtype": "int"},
+        "year": {"col_dtype": "int"},
+        "year_month": {"col_dtype": "string"},
+        "is_weekend": {"col_dtype": "boolean"}
+      }
+    }
+  ]
+}
